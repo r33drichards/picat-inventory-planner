@@ -13,7 +13,7 @@ them.
 
    ```bash
    npm install --no-save --package-lock=false \
-     mineflayer@4.39.0 mineflayer-pathfinder@2.4.5 prismarine-viewer@1.33.0
+     mineflayer@4.39.0 mineflayer-pathfinder@2.4.5 prismarine-viewer@1.33.0 canvas@3.2.0
    ```
 
 3. Download `picat.js` and `picat.wasm` from the same
@@ -91,7 +91,7 @@ the normal bot dependencies installed and the planner release files in
 
 ```bash
 npm install --no-save --package-lock=false \
-  mineflayer@4.39.0 mineflayer-pathfinder@2.4.5 prismarine-viewer@1.33.0 playwright@1.56.1
+  mineflayer@4.39.0 mineflayer-pathfinder@2.4.5 prismarine-viewer@1.33.0 canvas@3.2.0 playwright@1.56.1
 npx playwright install chromium
 ```
 
