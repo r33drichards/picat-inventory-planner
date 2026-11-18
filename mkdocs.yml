@@ -1,0 +1,26 @@
+site_name: Picat inventory planner
+site_description: Plan whole-stack inventory moves with Picat and WebAssembly
+repo_url: https://github.com/r33drichards/picat-inventory-planner
+repo_name: r33drichards/picat-inventory-planner
+edit_uri_template: edit/main/site-docs/{path}
+docs_dir: site-docs
+site_dir: site
+theme:
+  name: mkdocs
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - Install: install/overview.md
+  - Tutorials:
+      - Sort your first inventory: tutorials/first-plan.md
+  - How-to:
+      - Build and publish WebAssembly: how-to/build-wasm.md
+  - Concepts:
+      - How the planner searches: concepts/planning.md
+  - Reference:
+      - stdin and stdout: reference/cli.md
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true

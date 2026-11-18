@@ -3,6 +3,18 @@
 Find a shortest sequence of whole-stack moves from a starting inventory to an
 exact target layout.
 
+## Documentation
+
+Start with the [documentation home](site-docs/index.md), or go directly to
+[Install](site-docs/install/overview.md),
+[Sort your first inventory](site-docs/tutorials/first-plan.md),
+[Build and publish WebAssembly](site-docs/how-to/build-wasm.md),
+[How the planner searches](site-docs/concepts/planning.md), or
+[stdin and stdout](site-docs/reference/cli.md).
+
+To preview the docs locally, install MkDocs 1.6.1 and run
+`mkdocs build --strict` or `mkdocs serve`.
+
 ## Run the WebAssembly build
 
 Download `picat.js` and `picat.wasm` from the same GitHub release, place them
