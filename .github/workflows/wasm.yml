@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
           "$RUNNER_TEMP/emsdk/emsdk" activate 4.0.21
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           bash build-wasm.sh
-      - name: Verify stdin and configurable homes
+      - name: Verify stdin and exact goal layouts
         run: bash smoke-test.sh
       - uses: actions/upload-artifact@v4
         with:
@@ -39,7 +39,7 @@ jobs:
   publish:
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:

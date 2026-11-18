@@ -1,6 +1,4 @@
 solve(
     [[empty,stack(dirt,32),empty],[stack(stone,64),empty],[stack(stone,16),empty]],
-    [[stack(stone,64),empty,stack(stone,16)],[empty,stack(dirt,32)],[empty,empty]],
-    [[stone,1],[dirt,2]],
-    5
+    [[stack(stone,64),empty,stack(stone,16)],[empty,stack(dirt,32)],[empty,empty]]
 ).

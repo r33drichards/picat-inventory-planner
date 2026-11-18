@@ -1,7 +1,7 @@
 # Picat inventory planner
 
 Find a shortest sequence of whole-stack moves from a starting inventory to an
-exact target layout, within a caller-supplied action budget.
+exact target layout.
 
 ## Run the WebAssembly build
 
@@ -17,25 +17,22 @@ Supply one Picat data term on stdin, ending in a period.
 ```picat
 solve(
     [[empty,stack(dirt,32),empty],[stack(stone,64),empty],[stack(stone,16),empty]],
-    [[stack(stone,64),empty,stack(stone,16)],[empty,stack(dirt,32)],[empty,empty]],
-    [[stone,1],[dirt,2]],
-    5
+    [[stack(stone,64),empty,stack(stone,16)],[empty,stack(dirt,32)],[empty,empty]]
 ).
 ```
 
-The arguments are the start layout, the exact goal layout, the home chest
-for each item type, and the maximum number of actions. The final row is
-the player inventory. Chest and slot indices start at 1. The two layouts
-must have identical dimensions and contain the same whole stacks. Each
-item type needs one home chest. Goal stacks in a chest must be in that
-item's home. The goal may also specify stacks in the player row.
+The two arguments are the initial layout and the exact desired layout.
+The final row is the player inventory. Chest and slot indices start at 1.
+Both layouts must have identical dimensions and contain the same whole
+stacks. The desired layout specifies where every stack ends up, including
+stacks that should stay in the player inventory.
 
 `take(Chest,ChestSlot,PlayerSlot)` moves a chest stack into an empty player
 slot. `deposit(PlayerSlot,Chest,ChestSlot)` moves a player stack into an
-empty slot in its configured home chest. Taking a stack already in its
-home chest allows it to be rearranged within that chest. Stacks cannot
-split or merge. Each move costs one. The utility prints the plan and
-`Total actions: N`, or `No sorting plan within budget`.
+empty slot in any chest. This allows chests to serve as temporary storage
+during search. Stacks cannot split or merge. Each move costs one.
+The utility prints the plan and `Total actions: N`, or `No sorting plan`
+when the desired layout is unreachable.
 
 ## Build
 
