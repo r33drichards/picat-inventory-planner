@@ -1,0 +1,91 @@
+import io, planner.
+
+main =>
+    % Read one ground Picat term ending in a period.
+    Request = read_term(),
+    if valid_request(Request) then
+        Request = $solve(Start, Goal, Homes, Limit),
+        if best_plan($state(Start, Goal, Homes), Limit, Moves, Cost) then
+            foreach (Move in Moves)
+                println(Move)
+            end,
+            printf("Total actions: %w\n", Cost)
+        else
+            println("No sorting plan within budget")
+        end
+    else
+        println("Invalid input. Expected solve(Start, Goal, Homes, Limit)."),
+        throw(invalid_inventory_request)
+    end.
+
+valid_request(solve(Start, Goal, Homes, Limit)) =>
+    ground($solve(Start, Goal, Homes, Limit)),
+    integer(Limit), Limit >= 0, Limit =< 268435455,
+    list(Start), list(Goal), list(Homes),
+    Player = length(Start),
+    Player >= 2, length(Goal) == Player,
+    foreach (Entry in Homes)
+        valid_home(Entry, Player)
+    end,
+    Types = [Entry[1] : Entry in Homes],
+    length(remove_dups(Types)) == length(Types),
+    foreach (R in 1..Player)
+        list(Start[R]), list(Goal[R]),
+        length(Start[R]) == length(Goal[R]),
+        foreach (S in 1..length(Start[R]))
+            valid_slot(Start[R,S], Homes),
+            valid_slot(Goal[R,S], Homes),
+            valid_goal_slot(Goal[R,S], R, Player, Homes)
+        end
+    end,
+    sort([Slot : Row in Start, Slot in Row, Slot != empty]) ==
+        sort([Slot : Row in Goal, Slot in Row, Slot != empty]).
+
+valid_home([Item, Chest], Player) =>
+    atom(Item), integer(Chest), Chest >= 1, Chest < Player.
+
+valid_slot(empty, _) => true.
+valid_slot(stack(Item, Count), Homes) =>
+    integer(Count), Count > 0, item_home(Homes, Item, _).
+
+valid_goal_slot(empty, _, _, _) => true.
+valid_goal_slot(stack(Item, _), Row, Player, Homes) =>
+    (Row == Player ; item_home(Homes, Item, Row)).
+
+item_home([[Key, Chest]|_], Item, Home), Key == Item => Home = Chest.
+item_home([_|Rest], Item, Chest) => item_home(Rest, Item, Chest).
+
+% Carry the immutable request data in the state passed to the planner.
+final(state(Rows, Goal, _)) => Rows == Goal.
+
+action(state(Rows, Goal, Homes), NextState, Move, Cost) ?=>
+    Player = length(Rows),
+    member(From, 1..Player),
+    member(Source, 1..length(Rows[From])),
+    Stack = Rows[From, Source],
+    Stack = $stack(Item, _),
+    if From == Player then
+        item_home(Homes, Item, To),
+        Move = $deposit(Source, To, Destination)
+    else
+        To = Player,
+        Move = $take(From, Source, Destination)
+    end,
+    member(Destination, 1..length(Rows[To])),
+    Rows[To, Destination] == empty,
+    % Rebuild the two changed rows so backtracking retains the original state.
+    Next = [next_row(Rows[R], R, From, Source, To, Destination, Stack) : R in 1..Player],
+    NextState = $state(Next, Goal, Homes),
+    Cost = 1.
+
+next_row(Row, R, From, Source, To, Destination, Stack) = Next =>
+    if R == From then
+        Next = [replace_slot(Row[S], S, Source, empty) : S in 1..length(Row)]
+    elseif R == To then
+        Next = [replace_slot(Row[S], S, Destination, Stack) : S in 1..length(Row)]
+    else
+        Next = Row
+    end.
+
+replace_slot(_, S, Target, Value) = Value, S == Target => true.
+replace_slot(Previous, _, _, _) = Previous.

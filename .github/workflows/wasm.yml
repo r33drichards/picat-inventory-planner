@@ -1,0 +1,62 @@
+name: Build planner WASM
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'New release tag (for example v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Emscripten and build
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install 4.0.21
+          "$RUNNER_TEMP/emsdk/emsdk" activate 4.0.21
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          bash build-wasm.sh
+      - name: Verify stdin and configurable homes
+        run: bash smoke-test.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: picat-inventory-planner
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: picat-inventory-planner
+          path: dist
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9.-]+)?$ ]]; then
+            echo "Expected a version tag such as v0.1.0" >&2
+            exit 1
+          fi
+          gh release create "$TAG" dist/picat.wasm dist/picat.js dist/Picat-LICENSE.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$RELEASE_COMMIT" --title "$TAG" \
+            --notes 'Run with Node.js and provide a Picat solve(...) term on stdin. The Picat engine source is at https://github.com/r33drichards/picat/tree/2d00e3a456c2f7736940e1a1ed66e7b0aef8e021.'
