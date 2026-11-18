@@ -16,6 +16,7 @@ nav:
       - Sort your first inventory: tutorials/first-plan.md
   - How-to:
       - Build and publish WebAssembly: how-to/build-wasm.md
+      - Run the Minecraft chest sorter: how-to/minecraft-bot.md
   - Concepts:
       - How the planner searches: concepts/planning.md
   - Reference:

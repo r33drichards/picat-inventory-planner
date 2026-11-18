@@ -15,6 +15,12 @@ Start with the [documentation home](site-docs/index.md), or go directly to
 To preview the docs locally, install MkDocs 1.6.1 and run
 `mkdocs build --strict` or `mkdocs serve`.
 
+## Minecraft chest sorter
+
+The single-file [Mineflayer bot](chest-sort-bot.cjs) uses this planner to move
+whole stacks between Java Edition chests. See [Run the Minecraft chest
+sorter](site-docs/how-to/minecraft-bot.md) for setup, dry runs, and live viewing.
+
 ## Run the WebAssembly build
 
 Download `picat.js` and `picat.wasm` from the same GitHub release, place them

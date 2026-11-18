@@ -12,3 +12,6 @@ inventory layouts. It runs in Node.js using a WebAssembly build of Picat.
 | [How-to guide](how-to/build-wasm.md) | Build and release the WebAssembly distribution. |
 | [Concepts](concepts/planning.md) | Understand states, legal moves, and search cost. |
 | [Reference](reference/cli.md) | Look up the exact stdin and stdout format. |
+
+To sort chests in a live Minecraft world, follow the [Mineflayer bot
+guide](how-to/minecraft-bot.md).
