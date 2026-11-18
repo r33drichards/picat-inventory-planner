@@ -61,6 +61,36 @@ async function waitFor(test, label, timeoutMs) {
   throw new Error(`Timed out waiting for ${label}`)
 }
 
+async function installChestMeshes(page) {
+  // Chest blockstates have no faces because vanilla draws them as block entities.
+  // Supply a closed-chest mesh to the recording client using its existing atlas.
+  await page.route('**/blocksStates/1.21.4.json', async route => {
+    const response = await route.fetch()
+    const states = await response.json()
+    const plainModel = name => states[name].variants[''].model
+    const chest = plainModel('chest')
+    if (chest.elements.length === 0) {
+      const box = (material, from, to) => ({
+        from, to,
+        faces: Object.fromEntries(Object.entries(plainModel(material).elements[0].faces)
+          .map(([name, face]) => [name, { texture: face.texture }]))
+      })
+      const model = {
+        ...chest,
+        elements: [
+          box('dark_oak_planks', [1, 0, 1], [15, 10, 15]),
+          box('oak_planks', [1, 10, 1], [15, 14, 15]),
+          box('gold_block', [7, 8, 0], [9, 12, 1])
+        ]
+      }
+      states.chest.variants = Object.fromEntries(
+        [['north', 0], ['east', 90], ['south', 180], ['west', 270]]
+          .map(([facing, y]) => [`facing=${facing}`, { model, y }]))
+    }
+    await route.fulfill({ response, json: states })
+  })
+}
+
 async function main() {
   await mkdir(output, { recursive: true })
   let bot
@@ -80,6 +110,7 @@ async function main() {
     })
     const page = await context.newPage()
     recording = page.video()
+    await installChestMeshes(page)
     let pending = ''
     let latest
     let displayed
