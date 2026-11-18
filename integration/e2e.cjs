@@ -80,6 +80,43 @@ async function main() {
     })
     const page = await context.newPage()
     recording = page.video()
+    let pending = ''
+    let latest
+    let displayed
+    let status = 'Waiting for the inventory scan'
+    async function paint() {
+      const key = JSON.stringify([latest, status])
+      if (displayed === key) return
+      await page.evaluate(({ state, status }) => {
+        let hud = document.getElementById('sort-test-hud')
+        if (!hud) {
+          hud = document.createElement('aside')
+          hud.id = 'sort-test-hud'
+          hud.style.cssText = 'position:fixed;z-index:9999;bottom:16px;left:16px;right:16px;padding:14px 18px;background:#111922ee;color:white;border:1px solid #506376;border-radius:9px;font:15px system-ui;pointer-events:none'
+          document.body.append(hud)
+        }
+        const title = document.createElement('strong')
+        title.textContent = status || state?.message
+        hud.replaceChildren(title)
+        if (!state) return
+        const rows = document.createElement('div')
+        rows.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px'
+        const headings = ['Chest 1', 'Chest 2', 'Bot inventory']
+        const colors = ['#62edff', '#ffc66e', '#e8eef6']
+        ;[...state.chests, state.player].forEach((items, i) => {
+          const cell = document.createElement('div')
+          const heading = document.createElement('b')
+          heading.style.color = colors[i]
+          heading.textContent = headings[i]
+          const details = document.createElement('div')
+          details.textContent = items.join('  ·  ') || 'Empty'
+          cell.append(heading, details)
+          rows.append(cell)
+        })
+        hud.append(rows)
+      }, { state: latest, status })
+      displayed = key
+    }
     bot = spawn(process.execPath, ['chest-sort-bot.cjs'], {
       cwd: root,
       env: {
@@ -97,7 +134,8 @@ async function main() {
         DRY_RUN: '0',
         PLAN_TIMEOUT_MS: '30000',
         SCAN_INTERVAL_MS: '1000',
-        START_DELAY_MS: '5000'
+        START_DELAY_MS: '5000',
+        SHOW_TRANSFERS: '1'
       }
     })
     let spawnError
@@ -108,6 +146,17 @@ async function main() {
         text = (text + chunk).slice(-65536)
       })
     }
+    bot.stdout.on('data', chunk => {
+      pending += chunk
+      const lines = pending.split('\n')
+      pending = lines.pop()
+      for (const line of lines) {
+        if (line.startsWith('VIEW ')) {
+          latest = JSON.parse(line.slice(5))
+          status = ''
+        }
+      }
+    })
     const botAlive = () => {
       if (spawnError) throw spawnError
       if (bot.exitCode !== null || bot.signalCode !== null) throw new Error(`Bot exited\n${text}`)
@@ -119,8 +168,9 @@ async function main() {
     }, 'viewer', 30_000)
     await page.goto(viewer, { waitUntil: 'domcontentloaded' })
     await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 20000 })
-    await waitFor(() => {
+    await waitFor(async () => {
       botAlive()
+      await paint()
       return text.includes('Execute and verify 4 transfers') &&
         text.includes('Execute and verify 0 transfers') && /\nSorted\s*$/.test(text)
     }, 'a successful sort and zero-move repeat', 90_000)
@@ -130,7 +180,10 @@ async function main() {
     await check('unless data block 9 70 0 Items[0]')
     await check('unless data entity ChestSorter Inventory[0]')
     await check('if block 6 70 0 minecraft:bricks')
-    await sleep(1000)
+    assert.match(latest?.message ?? '', /^Move 4\/4/)
+    status = 'PASS · Paper verified the final slots and the second pass moved nothing'
+    await paint()
+    await sleep(2500)
   } catch (error) {
     failure = error
   } finally {

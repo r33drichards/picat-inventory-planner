@@ -247,6 +247,16 @@ async function sortLoop(bot, goals, config) {
         throw new Error('Managed player slots are occupied. Empty them before starting.')
       }
       checkedInitialPlayer = true
+      const showInventory = (message) => {
+        if (!config.showTransfers) return
+        const slots = items => items.flatMap((item, slot) =>
+          item ? [`#${slot + 1}  ${item.name} ×${item.count}`] : [])
+        console.log('VIEW ' + JSON.stringify({ message, chests: chestRows.map(slots), player: slots(player) }))
+      }
+      if (config.showTransfers) {
+        positions.forEach((position, i) => bot.viewer?.drawBoxGrid(
+          `chest-${i}`, position, position.offset(1, 1, 1), i === 0 ? '#62edff' : '#ffc66e'))
+      }
       stage(1, 'Choose exact goal slots')
       const { start, goal } = makeLayouts([...chestRows, player])
       stage(2, 'Find plan')
@@ -262,10 +272,13 @@ async function sortLoop(bot, goals, config) {
           return
         }
         stage(4, `Execute and verify ${actions.length} transfers`)
+        if (actions.length) showInventory('Starting inventory')
         for (const [index, action] of actions.entries()) {
           console.log(`Move ${index + 1}/${actions.length}: ${moves[index].kind}(${moves[index].args.join(',')})`)
           await withChest(bot, goals.GoalLookAtBlock, positions[action.chest],
             window => transfer(bot, window, action, chestRows[action.chest], player))
+          showInventory(`Move ${index + 1}/${actions.length} · ${action.take ? 'Take from' : 'Deposit into'} chest ${action.chest + 1}, slot ${action.chestSlot + 1}`)
+          if (config.showTransfers) await sleep(900)
         }
         if (actions.length) {
           for (const [index, position] of positions.entries()) {
@@ -294,6 +307,7 @@ function main() {
     interval: numberEnv('SCAN_INTERVAL_MS', 10000, 1000, 3600000),
     startDelay: numberEnv('START_DELAY_MS', 0, 0, 60000),
     planTimeout: numberEnv('PLAN_TIMEOUT_MS', 10000, 100, 120000),
+    showTransfers: process.env.SHOW_TRANSFERS === '1',
     dryRun: process.env.DRY_RUN === '1',
     viewerPort: numberEnv('VIEWER_PORT', 0, 0, 65535)
   }
