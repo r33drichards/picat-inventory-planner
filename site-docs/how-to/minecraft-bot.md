@@ -82,3 +82,35 @@ restarting.
 
 Start with a small room and a few stacks. An exact-slot search can grow quickly
 as stacks and empty slots increase. See [How the planner searches](../concepts/planning.md).
+
+## Run the Paper integration test
+
+Install Docker with the Compose plugin. Run from the repository root with
+the normal bot dependencies installed and the planner release files in
+`dist/`. Install Playwright and Chromium.
+
+```bash
+npm install --no-save --package-lock=false \
+  mineflayer@4.39.0 mineflayer-pathfinder@2.4.5 prismarine-viewer@1.33.0 playwright@1.56.1
+npx playwright install chromium
+```
+
+After accepting the [Minecraft EULA](https://aka.ms/MinecraftEULA), run:
+
+```bash
+EULA=TRUE node integration/e2e.cjs
+```
+
+The test starts a disposable offline-mode Paper 1.21.4 superflat server,
+listening only on loopback. It creates two chests with mismatched stacks,
+runs the real bot, and verifies exact chest slots, counts, an empty bot
+inventory, an intact block along the route, and a zero-move second pass.
+The test removes its Compose world volume on exit. When running multiple copies, set `E2E_MC_PORT` and `E2E_VIEWER_PORT` to
+different unused local ports.
+
+Find the result, logs, and the Prismarine Viewer WebM in
+`integration-results/`. A failure before Chromium starts can only produce
+diagnostics. On GitHub, apply the `minecraft-e2e` label to a pull request or
+dispatch **Minecraft E2E** manually from Actions. The PR reporter posts the
+result and a download link to the video and logs. GitHub serves the recording
+inside a workflow artifact ZIP.

@@ -1,0 +1,57 @@
+name: Report Minecraft E2E
+
+on:
+  workflow_run:
+    workflows: [Minecraft E2E]
+    types: [completed]
+
+permissions:
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      contains(fromJSON('["success","failure","timed_out"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            // Run metadata only. Do not check out PR code or download artifacts here.
+            const run = context.payload.workflow_run
+            const repo = context.repo
+            if (!run.head_repository || !run.head_branch) return
+            const prs = await github.paginate(github.rest.pulls.list, {
+              ...repo, state: 'open',
+              head: `${run.head_repository.owner.login}:${run.head_branch}`
+            })
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              ...repo, run_id: run.id
+            })
+            const artifact = artifacts.data.artifacts.find(a => a.name === 'minecraft-e2e' && !a.expired)
+            const status = run.conclusion === 'success' ? 'PASS' : 'FAIL'
+            const marker = '<!-- minecraft-e2e-report -->'
+            for (const pr of prs) {
+              if (pr.head.sha !== run.head_sha ||
+                  pr.head.repo?.full_name !== run.head_repository.full_name ||
+                  !pr.labels.some(label => label.name === 'minecraft-e2e')) continue
+              const options = { ...repo, issue_number: pr.number }
+              const body = [
+                marker,
+                '**Minecraft E2E — ' + status + '** for `' + run.head_sha.slice(0, 7) + '`',
+                `[Workflow run](${run.html_url})`,
+                artifact
+                  ? `[Download recording and logs](${run.html_url}/artifacts/${artifact.id})`
+                  : 'The run stopped before it uploaded a recording or logs.'
+              ].join('\n\n')
+              const comments = await github.paginate(github.rest.issues.listComments, options)
+              const existing = comments.find(comment =>
+                comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker))
+              if (existing) {
+                await github.rest.issues.updateComment({ ...repo, comment_id: existing.id, body })
+              } else {
+                await github.rest.issues.createComment({ ...options, body })
+              }
+            }

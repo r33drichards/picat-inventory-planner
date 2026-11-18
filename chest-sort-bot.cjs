@@ -292,6 +292,7 @@ function main() {
     maxChests: numberEnv('MAX_CHESTS', 2, 1, 10),
     playerSlots: numberEnv('PLAYER_SLOTS', 1, 1, 27),
     interval: numberEnv('SCAN_INTERVAL_MS', 10000, 1000, 3600000),
+    startDelay: numberEnv('START_DELAY_MS', 0, 0, 60000),
     planTimeout: numberEnv('PLAN_TIMEOUT_MS', 10000, 100, 120000),
     dryRun: process.env.DRY_RUN === '1',
     viewerPort: numberEnv('VIEWER_PORT', 0, 0, 65535)
@@ -329,6 +330,7 @@ function main() {
         require('prismarine-viewer').mineflayer(bot, { port: config.viewerPort, firstPerson: true })
       }
       await deadline(() => bot.waitForChunksToLoad(), 30000, 'Loading initial chunks')
+      if (config.startDelay) await sleep(config.startDelay)
       await sortLoop(bot, goals, config)
       if (config.dryRun) {
         if (bot.viewer) bot.viewer.close()

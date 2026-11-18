@@ -3,3 +3,4 @@ site/
 /node_modules/
 /picat.js
 /picat.wasm
+/integration-results/
